@@ -1,9 +1,1 @@
-{
-  "name":"Clean Quest",
-  "short_name":"Clean Quest",
-  "start_url":"./index.html",
-  "display":"standalone",
-  "background_color":"#f3eee4",
-  "theme_color":"#f3eee4",
-  "description":"A gamified household checklist."
-}
+{"name":"Clean Quest","short_name":"Clean Quest","start_url":"./index.html","display":"standalone","background_color":"#f3eee4","theme_color":"#f3eee4","description":"A gamified household checklist."}

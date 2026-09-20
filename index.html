@@ -17,7 +17,7 @@ header{display:flex;justify-content:space-between;align-items:center;gap:10px}h1
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.controls button,.addbtn,.modal button{border:0;border-radius:14px;padding:12px;background:var(--sage);color:white;font-weight:800;font-size:14px}.controls button:nth-child(2){background:var(--terr)}
 .zone{background:var(--card);border:1px solid var(--line);border-radius:20px;margin:12px 0;overflow:hidden}.zone summary{padding:15px;cursor:pointer;font-weight:850;list-style:none}.zone summary::-webkit-details-marker{display:none}.zoneMeta{float:right;color:var(--muted);font-weight:600;font-size:12px}
 .task{padding:11px 14px;border-top:1px solid #eee7dc;display:grid;grid-template-columns:1fr auto;gap:8px}.task.done{opacity:.58}.task.done .name{text-decoration:line-through}.name{font-weight:700}.sub{font-size:12px;color:var(--muted);margin-top:3px}.pts{font-weight:900;color:#8a6a25}.progress{grid-column:1/-1;display:flex;gap:6px}.progress button{flex:1;border:1px solid var(--line);background:#f6f1e9;border-radius:10px;padding:7px;font-size:11px}.progress button.active{background:var(--sage2);border-color:var(--sage)}
-.side{color:#8a6a25}.team{color:#5d7292}.locked{opacity:.45}
+.side{color:#8a6a25}.team{color:#5d7292}.locked{opacity:.45}.badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:850;margin-right:4px}.badge.req{background:#e5eee3;color:#3d6444}.badge.side{background:#fff0bd;color:#775b17}.badge.team{background:#e5ebf5;color:#49617e}.missionNote{font-size:12px;color:var(--muted);margin-top:6px}.teamline{margin-top:7px;font-size:12px;color:#5d7292}
 nav{position:fixed;bottom:0;left:0;right:0;background:#fffdf8eF;border-top:1px solid var(--line);backdrop-filter:blur(8px);display:flex;justify-content:center;padding:10px}.navinner{width:min(720px,100%);display:grid;grid-template-columns:1fr 1fr;gap:10px}.navinner button{border:0;border-radius:14px;padding:12px;font-weight:800}.navinner button:first-child{background:var(--sage);color:white}
 .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:#24322c;color:white;padding:12px 16px;border-radius:14px;display:none;max-width:90%;text-align:center;z-index:9}
 dialog{border:0;border-radius:20px;padding:0;max-width:520px;width:92%;background:var(--card)}dialog::backdrop{background:#0006}.modal{padding:20px}.modal input,.modal select{width:100%;padding:11px;border:1px solid var(--line);border-radius:12px;margin:5px 0 10px;background:white}.modal .actions{display:flex;gap:8px}.modal .actions button{flex:1}.modal .secondary{background:#ddd5c8;color:var(--ink)}
@@ -28,7 +28,7 @@ dialog{border:0;border-radius:20px;padding:0;max-width:520px;width:92%;backgroun
 <header><div><h1>🏡 Clean Quest</h1><div class="deadline">Victory deadline: Friday, Sept. 25, morning</div></div><div id="prestige" class="beer">✨ 0</div></header>
 <section class="score">
  <div class="row"><strong>Required Mission</strong><strong id="pct">0%</strong></div>
- <div class="bar"><i id="bar"></i></div>
+ <div class="bar"><i id="bar"></i></div><div class="missionNote">Partial progress moves the bar. Victory requires every required task, including Team Tasks, to reach Complete. Side Quests never block the beer.</div>
  <div class="row"><span id="points">0 points earned</span><span id="rooms">0 zones cleared</span></div>
  <div id="beer" class="beer" style="margin-top:10px">🔒 Special beer locked</div>
 </section>
@@ -52,41 +52,56 @@ const seed = [
 ["Upstairs Bathroom","Clean tub",8],["Upstairs Bathroom","Wipe walls",6],["Upstairs Bathroom","Clean floor",5],["Upstairs Bathroom","Clean sink",3],["Upstairs Bathroom","Clean vanity",4],
 ["Master Bedroom","Strip bed",2],["Master Bedroom","Dust furniture",5],["Master Bedroom","Reorganize shoes",20,"side"],
 ["Master Bathroom","Clean shower",10],["Master Bathroom","Clean toilet",5],["Master Bathroom","Clean floor",5],["Master Bathroom","Clean sinks",4],
-["Upstairs","Vacuum all upstairs rooms",12],["Laundry","Wash all bath towels and bath mats",8],["Laundry","Wash all dish towels",4],["Laundry","Underwear wash",5],["Laundry","Cold-water wash",5],
-["Spare Room","Strip bed",2],["Spare Room","Remake bed",4],["Spare Room","Vacuum",4],["Spare Room","Dust furniture",4],["Spare Room","Change decor",6],["Spare Room","Clean up and remove all clothing",8],["Spare Room","Reorganize closet",30,"side"],
-["Upstairs Library","Vacuum floors",4],["Upstairs Library","Dust furniture",4],["Upstairs Library","Remove all piled-up clothing",6],["Upstairs Library","Clear spare papers and tchotchkes off table",6],["Upstairs Library","Wash coffeemaker components in dishwasher",3],
+["Upstairs","Vacuum all upstairs rooms",12],
+["Laundry","Wash all bath towels and bath mats",8],["Laundry","Wash all dish towels",4],["Laundry","Underwear wash",5],["Laundry","Cold-water wash",5],
+["Spare Room","Strip bed",2],["Spare Room","Remake bed",4],["Spare Room","Dust furniture",4],["Spare Room","Change decor",6],["Spare Room","Clean up and remove all clothing",8],["Spare Room","Reorganize closet",30,"side"],
+["Upstairs Library","Dust furniture",4],["Upstairs Library","Remove all piled-up clothing",6],["Upstairs Library","Clear spare papers and tchotchkes off table",6],["Upstairs Library","Wash coffeemaker components in dishwasher",3],
 ["Attic","Wipe/mop floors",7],["Attic","Dust",5],["Attic","Assemble bookshelf",12],["Attic","Reorganize",5,"required","Assemble bookshelf"],["Attic","Clean bathroom",8,"team"],
 ["Maxine's Room","Wipe floors",5],["Maxine's Room","Dust",4],["Maxine's Room","Clean up/reorganize clothing storage",8],
 ["Kitchen & Dining","Wipe all counters",5],["Kitchen & Dining","Clean stovetop",3],["Kitchen & Dining","Vacuum floors",5],["Kitchen & Dining","Swiffer floors",6,"required","Vacuum floors"],["Kitchen & Dining","Straighten nook",5],["Kitchen & Dining","Wipe dining table",3],["Kitchen & Dining","Clean window sills",4],["Kitchen & Dining","Clean air fryer",6],
 ["Guest Bathroom","Clean toilet",5],["Guest Bathroom","Clean sink",3],["Guest Bathroom","Swiffer floor",4],
+["Living Room","Dust surfaces",5],["Living Room","Clean under couch",7],["Living Room","Vacuum",5,"team"],
+["Foyer","Dust shelves and seat",4],["Foyer","Shake out rug",3],["Foyer","Reorganize shoes",5],
 ["Stairs","Wipe main staircase",6],["Stairs","Wipe secret staircase",5],
 ["Basement","Wipe floor",7],["Basement","Take out garbage",3],["Basement","Clean laundry counters",4],
 ["Pantry","Clear out old/expired food",10,"side"],["Pantry","Reorganize pantry",15,"side","Clear out old/expired food"],
 ["Outside","Leaf-blow patio",5],["Outside","Wipe down patio/outdoor surfaces",5],["Outside","Finish weeding",8],["Outside","Add mulch",10,"required","Finish weeding"],["Outside","Wipe down front porch",5],["Outside","Mow lawn",10,"team"],
 ["Car","Clean out junk",5],["Car","Wipe down dog cover",4],
-["Garage","Get bulk-pickup items to curb",10,"required",null,"Tuesday night"],["Garage","Sweep garage",6],["Garage","General straightening",7],
-["Living Room","Dust surfaces",5],["Living Room","Clean under couch",7],["Living Room","Vacuum",5,"team"],
-["Foyer","Dust shelves and seat",4],["Foyer","Shake out rug",3],["Foyer","Reorganize shoes",5]
+["Garage","Get bulk-pickup items to curb",10,"required",null,"Tuesday night"],["Garage","Sweep garage",6],["Garage","General straightening",7]
 ];
 const zoneBonus={"Upstairs Bathroom":5,"Master Bedroom":3,"Master Bathroom":5,"Spare Room":5,"Upstairs Library":5,"Attic":7,"Maxine's Room":5,"Kitchen & Dining":8,"Guest Bathroom":4,"Stairs":3,"Basement":4,"Outside":8,"Car":3,"Garage":5,"Living Room":5,"Foyer":4,"Laundry":5};
 let state=JSON.parse(localStorage.getItem("cleanQuestState")||"null");
-if(!state){state={tasks:seed.map((x,i)=>({id:i+1,zone:x[0],name:x[1],points:x[2],type:x[3]||"required",dep:x[4]||null,deadline:x[5]||null,status:0})),eggs:[],prestige:0};save()}
+const makeSeed=()=>seed.map((x,i)=>({id:i+1,zone:x[0],name:x[1],points:x[2],type:x[3]||"required",dep:x[4]||null,deadline:x[5]||null,status:0}));
+if(!state){state={version:2,tasks:makeSeed(),eggs:[],prestige:0};save()}
+else if((state.version||1)<2){
+  const oldTasks=state.tasks||[], fresh=makeSeed();
+  fresh.forEach(t=>{const old=oldTasks.find(o=>o.zone===t.zone&&o.name===t.name);if(old)t.status=old.status||0});
+  const custom=oldTasks.filter(o=>o.id>1000000);
+  state.tasks=[...fresh,...custom];state.version=2;save();
+}
 function save(){localStorage.setItem("cleanQuestState",JSON.stringify(state))}
-function req(t){return t.type==="required"} function complete(t){return t.status===100}
+function req(t){return t.type==="required"||t.type==="team"} function mine(t){return t.type==="required"} function complete(t){return t.status===100}
 function locked(t){return t.dep && !state.tasks.some(x=>x.zone===t.zone&&x.name===t.dep&&complete(x))}
 function zoneCleared(z){let a=state.tasks.filter(t=>t.zone===z&&req(t));return a.length&&a.every(complete)}
-function stats(){let r=state.tasks.filter(req), done=r.filter(complete);let base=state.tasks.filter(complete).reduce((s,t)=>s+t.points,0);let bonus=Object.keys(zoneBonus).filter(zoneCleared).reduce((s,z)=>s+zoneBonus[z],0);return {r,done,pct:r.length?Math.round(done.length/r.length*100):100,points:base+bonus}}
+function stats(){
+ let r=state.tasks.filter(req), done=r.filter(complete);
+ let readiness=r.length?Math.round(r.reduce((s,t)=>s+t.status,0)/r.length):100;
+ let personal=state.tasks.filter(t=>complete(t)&&t.type!=="team").reduce((s,t)=>s+t.points,0);
+ let team=state.tasks.filter(t=>complete(t)&&t.type==="team").reduce((s,t)=>s+t.points,0);
+ let bonus=Object.keys(zoneBonus).filter(zoneCleared).reduce((s,z)=>s+zoneBonus[z],0);
+ return {r,done,pct:readiness,won:r.length>0&&r.every(complete),points:personal+bonus,team};
+}
 function render(){
- let s=stats(); pct.textContent=s.pct+"%";bar.style.width=s.pct+"%";points.textContent=s.points+" points earned";prestige.textContent="✨ "+state.prestige;
+ let s=stats(); pct.textContent=s.pct+"%";bar.style.width=s.pct+"%";points.innerHTML=s.points+" personal pts<div class=\"teamline\">"+s.team+" team pts · "+s.done.length+"/"+s.r.length+" required complete</div>";prestige.textContent="✨ "+state.prestige;
  let cleared=Object.keys(zoneBonus).filter(zoneCleared).length;rooms.textContent=cleared+" zones cleared";
- beer.className="beer"+(s.pct===100?" unlocked":"");beer.textContent=s.pct===100?"🍺 VICTORY! Special beer unlocked":"🔒 Special beer locked";
+ beer.className="beer"+(s.won?" unlocked":"");beer.textContent=s.won?"🍺 VICTORY! Special beer unlocked":"🔒 Special beer locked";
  let zs=[...new Set(state.tasks.map(t=>t.zone))];zones.innerHTML=zs.map(z=>{
-  let arr=state.tasks.filter(t=>t.zone===z), c=arr.filter(complete).length, clear=zoneCleared(z);
-  return `<details class="zone" ${z==="Garage"?"open":""}><summary>${clear?"🏆":"📍"} ${z}<span class="zoneMeta">${c}/${arr.length}${zoneBonus[z]?` · +${zoneBonus[z]} clear`:``}</span></summary>${arr.map(taskHTML).join("")}</details>`
+  let arr=state.tasks.filter(t=>t.zone===z), needed=arr.filter(req), c=needed.filter(complete).length, clear=zoneCleared(z);
+  return `<details class="zone" ${z==="Garage"?"open":""}><summary>${clear?"🏆":"📍"} ${z}<span class="zoneMeta">${needed.length?`${c}/${needed.length} required`:arr.every(t=>t.type==="side")?"Side quest":`${c}/${needed.length}`}${zoneBonus[z]?` · +${zoneBonus[z]} clear`:``}</span></summary>${arr.map(taskHTML).join("")}</details>`
  }).join("");
  achievements.innerHTML=state.eggs.length?`<h3>🥚 Discovered Easter Eggs</h3>`+state.eggs.map(e=>`<div class="achievement"><b>${e.title}</b> · +${e.points} prestige<br><span class="small">${e.text}</span></div>`).join(""):"";
 }
-function taskHTML(t){let l=locked(t), cls=`task ${complete(t)?"done":""} ${l?"locked":""}`;let tag=t.type==="side"?"⭐ Side Quest":t.type==="team"?"👨 Team Task":"Required";
+function taskHTML(t){let l=locked(t), cls=`task ${complete(t)?"done":""} ${l?"locked":""}`;let tag=t.type==="side"?`<span class="badge side">⭐ SIDE QUEST</span>`:t.type==="team"?`<span class="badge team">👨 TEAM · REQUIRED</span>`:`<span class="badge req">REQUIRED</span>`;
  return `<div class="${cls}"><div><div class="name">${l?"🔒 ":complete(t)?"✓ ":""}${t.name}</div><div class="sub ${t.type}">${tag}${t.deadline?" · 🚨 "+t.deadline:""}${t.dep?" · after "+t.dep:""}</div></div><div class="pts">${t.points} pts</div><div class="progress">${[0,50,100].map(v=>`<button ${l?"disabled":""} class="${t.status===v?"active":""}" onclick="setStatus(${t.id},${v})">${v===0?"Not started":v===50?"In progress":"Complete"}</button>`).join("")}</div></div>`}
 function setStatus(id,v){let t=state.tasks.find(x=>x.id===id);if(!t||locked(t))return;t.status=v;if(v===100)checkEggs(t);save();render();if(v===100)toast(`✓ ${t.name} complete · +${t.points} points`)}
 function checkEggs(t){
@@ -100,7 +115,11 @@ function checkEggs(t){
 }
 function suggest(){
  let candidates=state.tasks.filter(t=>!complete(t)&&!locked(t)&&t.type!=="team");
- if(!candidates.length){toast("Nothing available. Either victory is yours or only team tasks remain.");return}
+ if(!candidates.length){
+ let team=state.tasks.filter(t=>!complete(t)&&!locked(t)&&t.type==="team");
+ if(team.length){let t=team[0];toast(`👨 Team quest remaining: ${t.zone} → ${t.name}`);return}
+ toast("No available quests remain. Check locked dependencies or enjoy the victory.");return
+}
  let now=new Date(), dow=now.getDay();
  candidates.sort((a,b)=>{
    let au=a.deadline?100:0, bu=b.deadline?100:0;
@@ -109,7 +128,7 @@ function suggest(){
  });
  let t=candidates[0];toast(`🎯 Try this next: ${t.zone} → ${t.name} (${t.points} pts)`);
 }
-function showStats(){let s=stats();toast(`${s.done.length}/${s.r.length} required tasks complete · ${s.points} task points · ${state.prestige} hidden prestige`)}
+function showStats(){let s=stats();toast(`${s.done.length}/${s.r.length} required complete · ${s.points} personal pts · ${s.team} team pts · ${state.prestige} prestige`)}
 function openAdd(){addDialog.showModal()}
 function addTask(){let z=azone.value.trim(),n=aname.value.trim(),p=+apoints.value||5,type=atype.value;if(!z||!n)return;state.tasks.push({id:Date.now(),zone:z,name:n,points:p,type,status:0,dep:null,deadline:null});save();addDialog.close();azone.value="";aname.value="";render();toast("New quest added.")}
 function toast(msg){let e=document.getElementById("toast");e.textContent=msg;e.style.display="block";clearTimeout(window._tt);window._tt=setTimeout(()=>e.style.display="none",3500)}
