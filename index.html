@@ -21,7 +21,9 @@ header{display:flex;justify-content:space-between;align-items:center;gap:10px}h1
 nav{position:fixed;bottom:0;left:0;right:0;background:#fffdf8eF;border-top:1px solid var(--line);backdrop-filter:blur(8px);display:flex;justify-content:center;padding:10px}.navinner{width:min(720px,100%);display:grid;grid-template-columns:1fr 1fr;gap:10px}.navinner button{border:0;border-radius:14px;padding:12px;font-weight:800}.navinner button:first-child{background:var(--sage);color:white}
 .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:#24322c;color:white;padding:12px 16px;border-radius:14px;display:none;max-width:90%;text-align:center;z-index:9}
 dialog{border:0;border-radius:20px;padding:0;max-width:520px;width:92%;background:var(--card)}dialog::backdrop{background:#0006}.modal{padding:20px}.modal input,.modal select{width:100%;padding:11px;border:1px solid var(--line);border-radius:12px;margin:5px 0 10px;background:white}.modal .actions{display:flex;gap:8px}.modal .actions button{flex:1}.modal .secondary{background:#ddd5c8;color:var(--ink)}
-.small{font-size:12px;color:var(--muted)}.achievement{background:#fff5d8;border:1px solid #ead08a;border-radius:14px;padding:10px;margin-top:8px}
+.small{font-size:12px;color:var(--muted)}.heroStats{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.pill{background:#f1ece3;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800;color:var(--muted)}
+.celebrate{position:fixed;inset:0;display:none;place-items:center;background:#24322c88;z-index:20;padding:24px}.celebrate.show{display:grid}.celebrateCard{background:var(--card);border-radius:26px;padding:26px 22px;text-align:center;max-width:360px;width:100%;box-shadow:0 18px 50px #0005;animation:pop .35s ease-out}.celebrateCard .big{font-size:52px}.celebrateCard h2{font-family:Georgia,serif;margin:8px 0}.celebrateCard button{border:0;border-radius:14px;background:var(--sage);color:#fff;padding:11px 18px;font-weight:850}@keyframes pop{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}@keyframes pulse{50%{transform:scale(1.035)}}.justdone{animation:pulse .45s ease}
+.achievement{background:#fff5d8;border:1px solid #ead08a;border-radius:14px;padding:10px;margin-top:8px}
 </style>
 </head>
 <body><main class="app">
@@ -29,7 +31,7 @@ dialog{border:0;border-radius:20px;padding:0;max-width:520px;width:92%;backgroun
 <section class="score">
  <div class="row"><strong>Required Mission</strong><strong id="pct">0%</strong></div>
  <div class="bar"><i id="bar"></i></div><div class="missionNote">Partial progress moves the bar. Victory requires every required task, including Team Tasks, to reach Complete. Side Quests never block the beer.</div>
- <div class="row"><span id="points">0 points earned</span><span id="rooms">0 zones cleared</span></div>
+ <div class="row"><span id="points">0 points earned</span><span id="rooms">0 zones cleared</span></div><div class="heroStats"><span class="pill" id="taskcount">0 required complete</span><span class="pill">⭐ Side Quests optional</span></div>
  <div id="beer" class="beer" style="margin-top:10px">🔒 Special beer locked</div>
 </section>
 <div class="controls"><button onclick="suggest()">🎯 What should I do next?</button><button onclick="openAdd()">＋ Add task</button></div>
@@ -38,6 +40,7 @@ dialog{border:0;border-radius:20px;padding:0;max-width:520px;width:92%;backgroun
 </main>
 <nav><div class="navinner"><button onclick="window.scrollTo({top:0,behavior:'smooth'})">🏠 Quest</button><button onclick="showStats()">🏆 Score</button></div></nav>
 <div id="toast" class="toast"></div>
+<div id="celebrate" class="celebrate" onclick="closeCelebration()"><div class="celebrateCard" onclick="event.stopPropagation()"><div class="big" id="celIcon">🏆</div><h2 id="celTitle">Room Cleared!</h2><p id="celText"></p><button onclick="closeCelebration()">Continue Quest</button></div></div>
 
 <dialog id="addDialog"><div class="modal"><h2>Add a quest</h2>
 <label>Zone</label><input id="azone" placeholder="e.g., Office">
@@ -92,7 +95,7 @@ function stats(){
  return {r,done,pct:readiness,won:r.length>0&&r.every(complete),points:personal+bonus,team};
 }
 function render(){
- let s=stats(); pct.textContent=s.pct+"%";bar.style.width=s.pct+"%";points.innerHTML=s.points+" personal pts<div class=\"teamline\">"+s.team+" team pts · "+s.done.length+"/"+s.r.length+" required complete</div>";prestige.textContent="✨ "+state.prestige;
+ let s=stats(); pct.textContent=s.pct+"%";bar.style.width=s.pct+"%";points.innerHTML=s.points+" personal pts<div class=\"teamline\">"+s.team+" team pts</div>";taskcount.textContent=s.done.length+" of "+s.r.length+" required complete";prestige.textContent="✨ "+state.prestige;
  let cleared=Object.keys(zoneBonus).filter(zoneCleared).length;rooms.textContent=cleared+" zones cleared";
  beer.className="beer"+(s.won?" unlocked":"");beer.textContent=s.won?"🍺 VICTORY! Special beer unlocked":"🔒 Special beer locked";
  let zs=[...new Set(state.tasks.map(t=>t.zone))];zones.innerHTML=zs.map(z=>{
@@ -103,7 +106,15 @@ function render(){
 }
 function taskHTML(t){let l=locked(t), cls=`task ${complete(t)?"done":""} ${l?"locked":""}`;let tag=t.type==="side"?`<span class="badge side">⭐ SIDE QUEST</span>`:t.type==="team"?`<span class="badge team">👨 TEAM · REQUIRED</span>`:`<span class="badge req">REQUIRED</span>`;
  return `<div class="${cls}"><div><div class="name">${l?"🔒 ":complete(t)?"✓ ":""}${t.name}</div><div class="sub ${t.type}">${tag}${t.deadline?" · 🚨 "+t.deadline:""}${t.dep?" · after "+t.dep:""}</div></div><div class="pts">${t.points} pts</div><div class="progress">${[0,50,100].map(v=>`<button ${l?"disabled":""} class="${t.status===v?"active":""}" onclick="setStatus(${t.id},${v})">${v===0?"Not started":v===50?"In progress":"Complete"}</button>`).join("")}</div></div>`}
-function setStatus(id,v){let t=state.tasks.find(x=>x.id===id);if(!t||locked(t))return;t.status=v;if(v===100)checkEggs(t);save();render();if(v===100)toast(`✓ ${t.name} complete · +${t.points} points`)}
+function setStatus(id,v){
+ let t=state.tasks.find(x=>x.id===id);if(!t||locked(t))return;
+ let wasClear=zoneCleared(t.zone), wasWon=stats().won;
+ t.status=v;if(v===100)checkEggs(t);save();render();
+ let nowClear=zoneCleared(t.zone), nowWon=stats().won;
+ if(nowWon&&!wasWon){celebrateNow("🍺","QUEST COMPLETE!","Every required mission is complete. The special beer is officially unlocked.");return}
+ if(nowClear&&!wasClear&&zoneBonus[t.zone]){celebrateNow("🏆",t.zone+" CLEARED!","Zone bonus: +"+zoneBonus[t.zone]+" points. Nice work.");return}
+ if(v===100)toast(`✓ ${t.name} complete · +${t.points} ${t.type==="team"?"team":"personal"} points`);
+}
 function checkEggs(t){
  const unlock=(key,title,points,text)=>{if(!state.eggs.some(e=>e.key===key)){state.eggs.push({key,title,points,text});state.prestige+=points;setTimeout(()=>toast(`🥚 EASTER EGG! ${title} · +${points} prestige`),500)}};
  // Hidden conditions intentionally not surfaced in UI.
@@ -126,11 +137,13 @@ function suggest(){
    let late=(name)=>/swiffer|wipe floor|mop|wipe down|dust/i.test(name)?(dow>=4?15:-5):0;
    return (bu+b.points+late(b.name))-(au+a.points+late(a.name));
  });
- let t=candidates[0];toast(`🎯 Try this next: ${t.zone} → ${t.name} (${t.points} pts)`);
+ let t=candidates[0];let why=t.deadline?"Deadline priority":t.points>=10?"High-value mission":t.points<=4?"Quick win":"Strong next move";toast(`🎯 ${why}: ${t.zone} → ${t.name} (${t.points} pts)`);
 }
 function showStats(){let s=stats();toast(`${s.done.length}/${s.r.length} required complete · ${s.points} personal pts · ${s.team} team pts · ${state.prestige} prestige`)}
 function openAdd(){addDialog.showModal()}
 function addTask(){let z=azone.value.trim(),n=aname.value.trim(),p=+apoints.value||5,type=atype.value;if(!z||!n)return;state.tasks.push({id:Date.now(),zone:z,name:n,points:p,type,status:0,dep:null,deadline:null});save();addDialog.close();azone.value="";aname.value="";render();toast("New quest added.")}
+function celebrateNow(icon,title,msg){celIcon.textContent=icon;celTitle.textContent=title;celText.textContent=msg;celebrate.classList.add("show")}
+function closeCelebration(){celebrate.classList.remove("show")}
 function toast(msg){let e=document.getElementById("toast");e.textContent=msg;e.style.display="block";clearTimeout(window._tt);window._tt=setTimeout(()=>e.style.display="none",3500)}
-render();
+state.version=3;save();render();
 </script></body></html>
