@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f3eee4">
+<title>Clean Quest</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#f3eee4;--card:#fffdf8;--ink:#24322c;--muted:#6d756f;--sage:#789b7d;--sage2:#dbe7d9;--gold:#d5a94e;--terr:#b8755b;--line:#ddd5c8}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(#f5f0e7,#eee7db);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+.app{max-width:720px;margin:auto;min-height:100vh;padding:18px 14px 90px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px}h1{margin:0;font-family:Georgia,serif;font-size:30px}.deadline{font-size:12px;color:var(--muted)}
+.score{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;margin:14px 0;box-shadow:0 4px 14px #0000000b}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.bar{height:12px;background:#e7e0d5;border-radius:99px;overflow:hidden;margin:9px 0}.bar>i{display:block;height:100%;background:var(--sage);width:0}
+.beer{padding:10px 12px;border-radius:14px;background:#eee7dc;font-weight:700}.beer.unlocked{background:#f3d98c}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.controls button,.addbtn,.modal button{border:0;border-radius:14px;padding:12px;background:var(--sage);color:white;font-weight:800;font-size:14px}.controls button:nth-child(2){background:var(--terr)}
+.zone{background:var(--card);border:1px solid var(--line);border-radius:20px;margin:12px 0;overflow:hidden}.zone summary{padding:15px;cursor:pointer;font-weight:850;list-style:none}.zone summary::-webkit-details-marker{display:none}.zoneMeta{float:right;color:var(--muted);font-weight:600;font-size:12px}
+.task{padding:11px 14px;border-top:1px solid #eee7dc;display:grid;grid-template-columns:1fr auto;gap:8px}.task.done{opacity:.58}.task.done .name{text-decoration:line-through}.name{font-weight:700}.sub{font-size:12px;color:var(--muted);margin-top:3px}.pts{font-weight:900;color:#8a6a25}.progress{grid-column:1/-1;display:flex;gap:6px}.progress button{flex:1;border:1px solid var(--line);background:#f6f1e9;border-radius:10px;padding:7px;font-size:11px}.progress button.active{background:var(--sage2);border-color:var(--sage)}
+.side{color:#8a6a25}.team{color:#5d7292}.locked{opacity:.45}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fffdf8eF;border-top:1px solid var(--line);backdrop-filter:blur(8px);display:flex;justify-content:center;padding:10px}.navinner{width:min(720px,100%);display:grid;grid-template-columns:1fr 1fr;gap:10px}.navinner button{border:0;border-radius:14px;padding:12px;font-weight:800}.navinner button:first-child{background:var(--sage);color:white}
+.toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:#24322c;color:white;padding:12px 16px;border-radius:14px;display:none;max-width:90%;text-align:center;z-index:9}
+dialog{border:0;border-radius:20px;padding:0;max-width:520px;width:92%;background:var(--card)}dialog::backdrop{background:#0006}.modal{padding:20px}.modal input,.modal select{width:100%;padding:11px;border:1px solid var(--line);border-radius:12px;margin:5px 0 10px;background:white}.modal .actions{display:flex;gap:8px}.modal .actions button{flex:1}.modal .secondary{background:#ddd5c8;color:var(--ink)}
+.small{font-size:12px;color:var(--muted)}.achievement{background:#fff5d8;border:1px solid #ead08a;border-radius:14px;padding:10px;margin-top:8px}
+</style>
+</head>
+<body><main class="app">
+<header><div><h1>🏡 Clean Quest</h1><div class="deadline">Victory deadline: Friday, Sept. 25, morning</div></div><div id="prestige" class="beer">✨ 0</div></header>
+<section class="score">
+ <div class="row"><strong>Required Mission</strong><strong id="pct">0%</strong></div>
+ <div class="bar"><i id="bar"></i></div>
+ <div class="row"><span id="points">0 points earned</span><span id="rooms">0 zones cleared</span></div>
+ <div id="beer" class="beer" style="margin-top:10px">🔒 Special beer locked</div>
+</section>
+<div class="controls"><button onclick="suggest()">🎯 What should I do next?</button><button onclick="openAdd()">＋ Add task</button></div>
+<div id="zones"></div>
+<section id="achievements"></section>
+</main>
+<nav><div class="navinner"><button onclick="window.scrollTo({top:0,behavior:'smooth'})">🏠 Quest</button><button onclick="showStats()">🏆 Score</button></div></nav>
+<div id="toast" class="toast"></div>
+
+<dialog id="addDialog"><div class="modal"><h2>Add a quest</h2>
+<label>Zone</label><input id="azone" placeholder="e.g., Office">
+<label>Task</label><input id="aname" placeholder="e.g., Dust desk">
+<label>Points</label><input id="apoints" type="number" min="1" value="5">
+<label>Type</label><select id="atype"><option value="required">Required</option><option value="side">Optional side quest</option><option value="team">Husband / team task</option></select>
+<div class="actions"><button class="secondary" onclick="addDialog.close()">Cancel</button><button onclick="addTask()">Add</button></div>
+</div></dialog>
+
+<script>
+const seed = [
+["Upstairs Bathroom","Clean tub",8],["Upstairs Bathroom","Wipe walls",6],["Upstairs Bathroom","Clean floor",5],["Upstairs Bathroom","Clean sink",3],["Upstairs Bathroom","Clean vanity",4],
+["Master Bedroom","Strip bed",2],["Master Bedroom","Dust furniture",5],["Master Bedroom","Reorganize shoes",20,"side"],
+["Master Bathroom","Clean shower",10],["Master Bathroom","Clean toilet",5],["Master Bathroom","Clean floor",5],["Master Bathroom","Clean sinks",4],
+["Upstairs","Vacuum all upstairs rooms",12],["Laundry","Wash all bath towels and bath mats",8],["Laundry","Wash all dish towels",4],["Laundry","Underwear wash",5],["Laundry","Cold-water wash",5],
+["Spare Room","Strip bed",2],["Spare Room","Remake bed",4],["Spare Room","Vacuum",4],["Spare Room","Dust furniture",4],["Spare Room","Change decor",6],["Spare Room","Clean up and remove all clothing",8],["Spare Room","Reorganize closet",30,"side"],
+["Upstairs Library","Vacuum floors",4],["Upstairs Library","Dust furniture",4],["Upstairs Library","Remove all piled-up clothing",6],["Upstairs Library","Clear spare papers and tchotchkes off table",6],["Upstairs Library","Wash coffeemaker components in dishwasher",3],
+["Attic","Wipe/mop floors",7],["Attic","Dust",5],["Attic","Assemble bookshelf",12],["Attic","Reorganize",5,"required","Assemble bookshelf"],["Attic","Clean bathroom",8,"team"],
+["Maxine's Room","Wipe floors",5],["Maxine's Room","Dust",4],["Maxine's Room","Clean up/reorganize clothing storage",8],
+["Kitchen & Dining","Wipe all counters",5],["Kitchen & Dining","Clean stovetop",3],["Kitchen & Dining","Vacuum floors",5],["Kitchen & Dining","Swiffer floors",6,"required","Vacuum floors"],["Kitchen & Dining","Straighten nook",5],["Kitchen & Dining","Wipe dining table",3],["Kitchen & Dining","Clean window sills",4],["Kitchen & Dining","Clean air fryer",6],
+["Guest Bathroom","Clean toilet",5],["Guest Bathroom","Clean sink",3],["Guest Bathroom","Swiffer floor",4],
+["Stairs","Wipe main staircase",6],["Stairs","Wipe secret staircase",5],
+["Basement","Wipe floor",7],["Basement","Take out garbage",3],["Basement","Clean laundry counters",4],
+["Pantry","Clear out old/expired food",10,"side"],["Pantry","Reorganize pantry",15,"side","Clear out old/expired food"],
+["Outside","Leaf-blow patio",5],["Outside","Wipe down patio/outdoor surfaces",5],["Outside","Finish weeding",8],["Outside","Add mulch",10,"required","Finish weeding"],["Outside","Wipe down front porch",5],["Outside","Mow lawn",10,"team"],
+["Car","Clean out junk",5],["Car","Wipe down dog cover",4],
+["Garage","Get bulk-pickup items to curb",10,"required",null,"Tuesday night"],["Garage","Sweep garage",6],["Garage","General straightening",7],
+["Living Room","Dust surfaces",5],["Living Room","Clean under couch",7],["Living Room","Vacuum",5,"team"],
+["Foyer","Dust shelves and seat",4],["Foyer","Shake out rug",3],["Foyer","Reorganize shoes",5]
+];
+const zoneBonus={"Upstairs Bathroom":5,"Master Bedroom":3,"Master Bathroom":5,"Spare Room":5,"Upstairs Library":5,"Attic":7,"Maxine's Room":5,"Kitchen & Dining":8,"Guest Bathroom":4,"Stairs":3,"Basement":4,"Outside":8,"Car":3,"Garage":5,"Living Room":5,"Foyer":4,"Laundry":5};
+let state=JSON.parse(localStorage.getItem("cleanQuestState")||"null");
+if(!state){state={tasks:seed.map((x,i)=>({id:i+1,zone:x[0],name:x[1],points:x[2],type:x[3]||"required",dep:x[4]||null,deadline:x[5]||null,status:0})),eggs:[],prestige:0};save()}
+function save(){localStorage.setItem("cleanQuestState",JSON.stringify(state))}
+function req(t){return t.type==="required"} function complete(t){return t.status===100}
+function locked(t){return t.dep && !state.tasks.some(x=>x.zone===t.zone&&x.name===t.dep&&complete(x))}
+function zoneCleared(z){let a=state.tasks.filter(t=>t.zone===z&&req(t));return a.length&&a.every(complete)}
+function stats(){let r=state.tasks.filter(req), done=r.filter(complete);let base=state.tasks.filter(complete).reduce((s,t)=>s+t.points,0);let bonus=Object.keys(zoneBonus).filter(zoneCleared).reduce((s,z)=>s+zoneBonus[z],0);return {r,done,pct:r.length?Math.round(done.length/r.length*100):100,points:base+bonus}}
+function render(){
+ let s=stats(); pct.textContent=s.pct+"%";bar.style.width=s.pct+"%";points.textContent=s.points+" points earned";prestige.textContent="✨ "+state.prestige;
+ let cleared=Object.keys(zoneBonus).filter(zoneCleared).length;rooms.textContent=cleared+" zones cleared";
+ beer.className="beer"+(s.pct===100?" unlocked":"");beer.textContent=s.pct===100?"🍺 VICTORY! Special beer unlocked":"🔒 Special beer locked";
+ let zs=[...new Set(state.tasks.map(t=>t.zone))];zones.innerHTML=zs.map(z=>{
+  let arr=state.tasks.filter(t=>t.zone===z), c=arr.filter(complete).length, clear=zoneCleared(z);
+  return `<details class="zone" ${z==="Garage"?"open":""}><summary>${clear?"🏆":"📍"} ${z}<span class="zoneMeta">${c}/${arr.length}${zoneBonus[z]?` · +${zoneBonus[z]} clear`:``}</span></summary>${arr.map(taskHTML).join("")}</details>`
+ }).join("");
+ achievements.innerHTML=state.eggs.length?`<h3>🥚 Discovered Easter Eggs</h3>`+state.eggs.map(e=>`<div class="achievement"><b>${e.title}</b> · +${e.points} prestige<br><span class="small">${e.text}</span></div>`).join(""):"";
+}
+function taskHTML(t){let l=locked(t), cls=`task ${complete(t)?"done":""} ${l?"locked":""}`;let tag=t.type==="side"?"⭐ Side Quest":t.type==="team"?"👨 Team Task":"Required";
+ return `<div class="${cls}"><div><div class="name">${l?"🔒 ":complete(t)?"✓ ":""}${t.name}</div><div class="sub ${t.type}">${tag}${t.deadline?" · 🚨 "+t.deadline:""}${t.dep?" · after "+t.dep:""}</div></div><div class="pts">${t.points} pts</div><div class="progress">${[0,50,100].map(v=>`<button ${l?"disabled":""} class="${t.status===v?"active":""}" onclick="setStatus(${t.id},${v})">${v===0?"Not started":v===50?"In progress":"Complete"}</button>`).join("")}</div></div>`}
+function setStatus(id,v){let t=state.tasks.find(x=>x.id===id);if(!t||locked(t))return;t.status=v;if(v===100)checkEggs(t);save();render();if(v===100)toast(`✓ ${t.name} complete · +${t.points} points`)}
+function checkEggs(t){
+ const unlock=(key,title,points,text)=>{if(!state.eggs.some(e=>e.key===key)){state.eggs.push({key,title,points,text});state.prestige+=points;setTimeout(()=>toast(`🥚 EASTER EGG! ${title} · +${points} prestige`),500)}};
+ // Hidden conditions intentionally not surfaced in UI.
+ if(t.name==="Wipe secret staircase") unlock("secret","The Secret Was the Point",17,"A hidden staircase deserved a hidden reward.");
+ if(state.tasks.filter(x=>complete(x)&&x.type==="required"&&x.points<=4).length>=5) unlock("small5","Tiny Tasks, Real Progress",13,"Five small required quests quietly disappeared.");
+ if(zoneCleared("Upstairs Library")) unlock("library","Order in the Library",19,"The library has been restored to civilization.");
+ if(complete(t)&&t.name==="Clean under couch") unlock("under","What Lies Beneath",11,"You went where dust goes to hide.");
+ if(state.tasks.filter(x=>complete(x)&&x.type==="side").length>=2) unlock("side2","Questing Off Script",23,"Two optional quests completed with no effect on the beer requirement.");
+}
+function suggest(){
+ let candidates=state.tasks.filter(t=>!complete(t)&&!locked(t)&&t.type!=="team");
+ if(!candidates.length){toast("Nothing available. Either victory is yours or only team tasks remain.");return}
+ let now=new Date(), dow=now.getDay();
+ candidates.sort((a,b)=>{
+   let au=a.deadline?100:0, bu=b.deadline?100:0;
+   let late=(name)=>/swiffer|wipe floor|mop|wipe down|dust/i.test(name)?(dow>=4?15:-5):0;
+   return (bu+b.points+late(b.name))-(au+a.points+late(a.name));
+ });
+ let t=candidates[0];toast(`🎯 Try this next: ${t.zone} → ${t.name} (${t.points} pts)`);
+}
+function showStats(){let s=stats();toast(`${s.done.length}/${s.r.length} required tasks complete · ${s.points} task points · ${state.prestige} hidden prestige`)}
+function openAdd(){addDialog.showModal()}
+function addTask(){let z=azone.value.trim(),n=aname.value.trim(),p=+apoints.value||5,type=atype.value;if(!z||!n)return;state.tasks.push({id:Date.now(),zone:z,name:n,points:p,type,status:0,dep:null,deadline:null});save();addDialog.close();azone.value="";aname.value="";render();toast("New quest added.")}
+function toast(msg){let e=document.getElementById("toast");e.textContent=msg;e.style.display="block";clearTimeout(window._tt);window._tt=setTimeout(()=>e.style.display="none",3500)}
+render();
+</script></body></html>
