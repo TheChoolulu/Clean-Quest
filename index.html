@@ -70,11 +70,11 @@ const seed = [
 ["Pantry","Clear out old/expired food",10,"side"],["Pantry","Reorganize pantry",15,"side","Clear out old/expired food"],
 ["Outside","Leaf-blow patio",5],["Outside","Wipe down patio/outdoor surfaces",5],["Outside","Finish weeding",8],["Outside","Add mulch",10,"required","Finish weeding"],["Outside","Wipe down front porch",5],["Outside","Mow lawn",10,"team"],
 ["Car","Clean out junk",5],["Car","Wipe down dog cover",4],
-["Garage","Get bulk-pickup items to curb",10,"required",null,"Tuesday night"],["Garage","Sweep garage",6],["Garage","General straightening",7]
+["Garage","Get bulk-pickup items to curb",10,"required",null,"Tuesday night","2026-09-22T12:00:00"],["Garage","Sweep garage",6],["Garage","General straightening",7]
 ];
 const zoneBonus={"Upstairs Bathroom":5,"Master Bedroom":3,"Master Bathroom":5,"Spare Room":5,"Upstairs Library":5,"Attic":7,"Maxine's Room":5,"Kitchen & Dining":8,"Guest Bathroom":4,"Stairs":3,"Basement":4,"Outside":8,"Car":3,"Garage":5,"Living Room":5,"Foyer":4,"Laundry":5};
 let state=JSON.parse(localStorage.getItem("cleanQuestState")||"null");
-const makeSeed=()=>seed.map((x,i)=>({id:i+1,zone:x[0],name:x[1],points:x[2],type:x[3]||"required",dep:x[4]||null,deadline:x[5]||null,status:0}));
+const makeSeed=()=>seed.map((x,i)=>({id:i+1,zone:x[0],name:x[1],points:x[2],type:x[3]||"required",dep:x[4]||null,deadline:x[5]||null,available:x[6]||null,status:0}));
 if(!state){state={version:2,tasks:makeSeed(),eggs:[],prestige:0};save()}
 else if((state.version||1)<2){
   const oldTasks=state.tasks||[], fresh=makeSeed();
@@ -82,9 +82,15 @@ else if((state.version||1)<2){
   const custom=oldTasks.filter(o=>o.id>1000000);
   state.tasks=[...fresh,...custom];state.version=2;save();
 }
+if((state.version||1)<4){
+  const bulk=state.tasks.find(t=>t.zone==="Garage"&&t.name==="Get bulk-pickup items to curb");
+  if(bulk){bulk.available="2026-09-22T12:00:00";bulk.deadline="Tuesday night";}
+  state.version=4;save();
+}
 function save(){localStorage.setItem("cleanQuestState",JSON.stringify(state))}
 function req(t){return t.type==="required"||t.type==="team"} function mine(t){return t.type==="required"} function complete(t){return t.status===100}
-function locked(t){return t.dep && !state.tasks.some(x=>x.zone===t.zone&&x.name===t.dep&&complete(x))}
+function timeLocked(t){return !!(t.available && new Date() < new Date(t.available))}
+function locked(t){return timeLocked(t) || (t.dep && !state.tasks.some(x=>x.zone===t.zone&&x.name===t.dep&&complete(x)))}
 function zoneCleared(z){let a=state.tasks.filter(t=>t.zone===z&&req(t));return a.length&&a.every(complete)}
 function stats(){
  let r=state.tasks.filter(req), done=r.filter(complete);
@@ -105,7 +111,8 @@ function render(){
  achievements.innerHTML=state.eggs.length?`<h3>🥚 Discovered Easter Eggs</h3>`+state.eggs.map(e=>`<div class="achievement"><b>${e.title}</b> · +${e.points} prestige<br><span class="small">${e.text}</span></div>`).join(""):"";
 }
 function taskHTML(t){let l=locked(t), cls=`task ${complete(t)?"done":""} ${l?"locked":""}`;let tag=t.type==="side"?`<span class="badge side">⭐ SIDE QUEST</span>`:t.type==="team"?`<span class="badge team">👨 TEAM · REQUIRED</span>`:`<span class="badge req">REQUIRED</span>`;
- return `<div class="${cls}"><div><div class="name">${l?"🔒 ":complete(t)?"✓ ":""}${t.name}</div><div class="sub ${t.type}">${tag}${t.deadline?" · 🚨 "+t.deadline:""}${t.dep?" · after "+t.dep:""}</div></div><div class="pts">${t.points} pts</div><div class="progress">${[0,50,100].map(v=>`<button ${l?"disabled":""} class="${t.status===v?"active":""}" onclick="setStatus(${t.id},${v})">${v===0?"Not started":v===50?"In progress":"Complete"}</button>`).join("")}</div></div>`}
+ let avail=timeLocked(t)?` · ⏳ Available Tuesday afternoon`:"";
+ return `<div class="${cls}"><div><div class="name">${l?"🔒 ":complete(t)?"✓ ":""}${t.name}</div><div class="sub ${t.type}">${tag}${avail}${t.deadline?" · 🚨 "+t.deadline:""}${t.dep?" · after "+t.dep:""}</div></div><div class="pts">${t.points} pts</div><div class="progress">${[0,50,100].map(v=>`<button ${l?"disabled":""} class="${t.status===v?"active":""}" onclick="setStatus(${t.id},${v})">${v===0?"Not started":v===50?"In progress":"Complete"}</button>`).join("")}</div></div>`}
 function setStatus(id,v){
  let t=state.tasks.find(x=>x.id===id);if(!t||locked(t))return;
  let wasClear=zoneCleared(t.zone), wasWon=stats().won;
@@ -145,5 +152,5 @@ function addTask(){let z=azone.value.trim(),n=aname.value.trim(),p=+apoints.valu
 function celebrateNow(icon,title,msg){celIcon.textContent=icon;celTitle.textContent=title;celText.textContent=msg;celebrate.classList.add("show")}
 function closeCelebration(){celebrate.classList.remove("show")}
 function toast(msg){let e=document.getElementById("toast");e.textContent=msg;e.style.display="block";clearTimeout(window._tt);window._tt=setTimeout(()=>e.style.display="none",3500)}
-state.version=3;save();render();
+state.version=4;save();render();
 </script></body></html>
