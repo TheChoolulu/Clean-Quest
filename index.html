@@ -27,7 +27,7 @@ dialog{border:0;border-radius:20px;padding:0;max-width:520px;width:92%;backgroun
 </style>
 </head>
 <body><main class="app">
-<header><div><h1>🏡 Clean Quest</h1><div class="deadline">Victory deadline: Friday, Sept. 25, morning</div></div><div id="prestige" class="beer">✨ 0</div></header>
+<header><div><h1>🏡 Clean Quest</h1><div class="deadline">Victory deadline: Friday, Sept. 25 at 6:00 PM · <span id="countdown"></span></div></div><div id="prestige" class="beer">✨ 0</div></header>
 <section class="score">
  <div class="row"><strong>Required Mission</strong><strong id="pct">0%</strong></div>
  <div class="bar"><i id="bar"></i></div><div class="missionNote">Partial progress moves the bar. Victory requires every required task, including Team Tasks, to reach Complete. Side Quests never block the beer.</div>
@@ -51,6 +51,7 @@ dialog{border:0;border-radius:20px;padding:0;max-width:520px;width:92%;backgroun
 </div></dialog>
 
 <script>
+const MISSION_DEADLINE = new Date("2026-09-25T18:00:00");
 const seed = [
 ["Upstairs Bathroom","Clean tub",8],["Upstairs Bathroom","Wipe walls",6],["Upstairs Bathroom","Clean floor",5],["Upstairs Bathroom","Clean sink",3],["Upstairs Bathroom","Clean vanity",4],
 ["Master Bedroom","Strip bed",2],["Master Bedroom","Dust furniture",5],["Master Bedroom","Reorganize shoes",20,"side"],
@@ -99,6 +100,13 @@ function stats(){
  let team=state.tasks.filter(t=>complete(t)&&t.type==="team").reduce((s,t)=>s+t.points,0);
  let bonus=Object.keys(zoneBonus).filter(zoneCleared).reduce((s,z)=>s+zoneBonus[z],0);
  return {r,done,pct:readiness,won:r.length>0&&r.every(complete),points:personal+bonus,team};
+}
+function updateCountdown(){
+ let ms=MISSION_DEADLINE-new Date(), el=document.getElementById("countdown"); if(!el)return;
+ if(ms<=0){el.textContent="deadline reached";return}
+ let mins=Math.floor(ms/60000), hrs=Math.floor(mins/60), days=Math.floor(hrs/24);
+ hrs%=24; mins%=60;
+ el.textContent=days>0?`${days}d ${hrs}h remaining`:`${hrs}h ${mins}m remaining`;
 }
 function render(){
  let s=stats(); pct.textContent=s.pct+"%";bar.style.width=s.pct+"%";points.innerHTML=s.points+" personal pts<div class=\"teamline\">"+s.team+" team pts</div>";taskcount.textContent=s.done.length+" of "+s.r.length+" required complete";prestige.textContent="✨ "+state.prestige;
@@ -152,5 +160,5 @@ function addTask(){let z=azone.value.trim(),n=aname.value.trim(),p=+apoints.valu
 function celebrateNow(icon,title,msg){celIcon.textContent=icon;celTitle.textContent=title;celText.textContent=msg;celebrate.classList.add("show")}
 function closeCelebration(){celebrate.classList.remove("show")}
 function toast(msg){let e=document.getElementById("toast");e.textContent=msg;e.style.display="block";clearTimeout(window._tt);window._tt=setTimeout(()=>e.style.display="none",3500)}
-state.version=4;save();render();
+state.version=5;save();render();updateCountdown();setInterval(updateCountdown,60000);
 </script></body></html>

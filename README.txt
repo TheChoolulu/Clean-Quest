@@ -1,10 +1,10 @@
-CLEAN QUEST v4
+CLEAN QUEST v5
 
-Update:
-- "Get bulk-pickup items to curb" is now time-gated.
-- It remains locked and cannot be completed or recommended before Tuesday, September 22, 2026 at 12:00 PM local device time.
-- When Tuesday afternoon arrives, it automatically unlocks.
-- Its Tuesday-night deadline remains in place, so the recommendation engine then treats it as a deadline-priority quest.
-- Existing Clean Quest progress is preserved through localStorage migration.
+Victory deadline: Friday, September 25, 2026 at 6:00 PM.
+A live countdown now appears beside the deadline.
 
-Upload index.html and manifest.json to the root of the existing Clean-Quest GitHub repository, replacing the old versions.
+Your in-app additions and progress are stored in the browser's localStorage and are not replaced by this update when you use the same Clean Quest URL on the same browser/device.
+
+Do not clear Chrome/site data for Clean Quest.
+
+Upload index.html and manifest.json to the root of the existing GitHub repository, replacing the old versions.
